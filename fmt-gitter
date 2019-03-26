@@ -1,0 +1,200 @@
+#!/usr/bin/env python
+
+import datetime
+import fileinput
+from itertools import islice
+import json
+from pprint import pprint
+import re
+import sys
+
+header = '''
+<!doctype html>
+<html class="no-js fonts-loaded" lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>icebreaker-fpga/Lobby - Gitter</title>
+    <link rel="subresource" href="https://cdn03.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-Regular.otf.woff">
+    <link rel="preload" href="https://cdn03.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-Regular.otf.woff" as="font" type="font/woff">
+    <link rel="preload" href="https://cdn01.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-It.otf.woff" as="font" type="font/woff">
+    <link rel="preload" href="https://cdn01.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-Bold.otf.woff" as="font" type="font/woff">
+    <link rel="preload" href="https://cdn02.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-Semibold.otf.woff" as="font" type="font/woff">
+    <link rel="preload" href="https://cdn03.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-BoldIt.otf.woff" as="font" type="font/woff">
+    <link rel="preload" href="https://cdn02.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-Light.otf.woff" as="font" type="font/woff">
+    <link rel="preload" href="https://cdn03.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-ExtraLight.otf.woff" as="font" type="font/woff">
+    <style>
+      @font-face {
+        font-family: 'SourceSansLocal';
+        font-style: normal;
+        font-weight: bold;
+        src: local("SourceSansPro-Bold");
+      }
+      @font-face {
+        font-family: 'SourceSansLocal';
+        font-style: italic;
+        font-weight: bold;
+        src: local("SourceSansPro-BoldIt");
+      }
+      @font-face {
+        font-family: 'SourceSansLocal';
+        font-style: normal;
+        font-weight: 200;
+        src: local("SourceSansPro-ExtraLight");
+      }
+      @font-face {
+        font-family: 'SourceSansLocal';
+        font-style: italic;
+        font-weight: normal;
+        src: local("SourceSansPro-It");
+      }
+      @font-face {
+        font-family: 'SourceSansLocal';
+        font-style: normal;
+        font-weight: 300;
+        src: local("SourceSansPro-Light");
+      }
+      @font-face {
+        font-family: 'SourceSansLocal';
+        font-style: normal;
+        font-weight: normal;
+        src: local("SourceSansPro-Regular");
+      }
+      @font-face {
+        font-family: 'SourceSansLocal';
+        font-style: normal;
+        font-weight: 600;
+        src: local("SourceSansPro-Semibold");
+      }
+      @font-face {
+        font-family: "source-sans-pro";
+      src: url("https://cdn03.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-Regular.otf.woff") format('woff');
+        font-weight: normal;
+        font-style: normal
+      }
+      @font-face {
+        font-family: "source-sans-pro";
+        src: url("https://cdn01.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-It.otf.woff") format('woff');
+        font-weight: normal;
+        font-style: italic
+      }
+      @font-face {
+        font-family: "source-sans-pro";
+        src: url("https://cdn01.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-Bold.otf.woff") format('woff');
+        font-weight: bold;
+        font-style: normal
+      }
+      @font-face {
+        font-family: "source-sans-pro";
+        src: url("https://cdn02.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-Semibold.otf.woff") format('woff');
+        font-weight: 600;
+        font-style: normal
+      }
+      @font-face {
+        font-family: "source-sans-pro";
+        src: url("https://cdn03.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-BoldIt.otf.woff") format('woff');
+        font-weight: bold;
+        font-style: italic
+      }
+      @font-face {
+        font-family: "source-sans-pro";
+        src: url("https://cdn02.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-Light.otf.woff") format('woff');
+        font-weight: 300;
+        font-style: normal
+      }
+      @font-face {
+        font-family: "source-sans-pro";
+        src: url("https://cdn03.gitter.im/_s/3811847/fonts/sourcesans/SourceSansPro-ExtraLight.otf.woff") format('woff');
+        font-weight: 200;
+        font-style: normal
+      }
+    </style>
+    <link rel="stylesheet" href='https://cdn01.gitter.im/_s/3811847/sprites/services.css'>
+    <link rel="stylesheet" href='https://cdn02.gitter.im/_s/3811847/styles/router-chat.css'>
+    <link id="favicon" rel="shortcut icon" href='https://cdn03.gitter.im/_s/3811847/images/favicon-normal.ico'><!-- Le fav and touch icons -->
+  </head>
+  <body style="overflow: scroll">
+'''
+
+footer = '''
+  </body>
+</html>
+'''
+
+template = '''
+    <div class="chat-item model-id-5c2e0e086649aa1f8213ac56 burstStart read ">
+      <div class='chat-item__container'>
+        <div class='chat-item__aside'>
+          <div class="chat-item__avatar">
+            <div class="trpDisplayPicture
+                        avatar-{fromUser[id]}
+                        avatar-s
+                        online">
+              <img src="{fromUser[avatarUrl]}"
+                   srcset="{fromUser[avatarUrl]} 2x"
+                   height="30" width="30"
+                   class="avatar__image"
+                   alt="">
+            </div>
+          </div>
+        </div>
+        <div class='chat-item__content'>
+          <div class='chat-item__details'>
+            <div class='chat-item__from
+                        js-chat-item-from'>{fromUser[displayName]}</div>
+            <div class='chat-item__username
+                        js-chat-item-from'>{fromUser[username]}</div>
+            <a class='chat-item__time
+                      js-chat-time'
+               href='https://gitter.im/icebreaker-fpga/Lobby?at={id}'
+               title="">{displayTime}</a>
+          </div>
+          <div class='chat-item__text
+                      js-chat-item-text'>
+            {html}
+          </div>
+        </div>
+      </div>
+    </div>
+
+'''.strip()
+
+
+def display_time(sent, today=datetime.datetime.today()):
+    def is_this_year(dt):
+        return dt.year == today.year
+    def is_today(dt):
+        return (dt.year == today.year and
+                dt.month == today.month and
+                dt.day == today.day)
+    msg_time_utc = datetime.datetime.strptime(sent, '%Y-%m-%dT%H:%M:%S.%f%z')
+    msg_time_local = msg_time_utc.astimezone()
+    if is_today(msg_time_local):
+        return msg_time_local.strftime('%H:%M')
+    if is_this_year(msg_time_local):
+        return msg_time_local.strftime('%b %d %H:%M')
+    return msg_time_local.strftime('%b %d %Y %H:%M')
+
+
+# with open('icebreaker-fpga.lobby.json') as src:
+#     data = json.load(src)
+# pprint(data[2], stream=sys.stderr)
+
+def print_html(data):
+    print(header)
+    for msg in sorted(data, key=lambda obj: obj['sent']):
+        msg['displayTime'] = display_time(msg['sent'])
+        print(template.format_map(msg))
+    print(footer)
+
+
+def main():
+    text = ''.join(fileinput.input())
+    text = text.replace('},\n\n]', '}\n]')
+    data = json.loads(text)
+    # with fileinput.input() as src:
+    #     data = json.load(src)
+    print_html(data)
+
+
+if __name__ == '__main__':
+    main()
