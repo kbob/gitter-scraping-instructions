@@ -59,3 +59,11 @@ With any luck, you'll get a very large JSON file in a few minutes.
     $ open some-file.html
 
 That will give you the room's entire history as a single, large HTML page.
+
+
+# Notes for Windows Users
+
+One user has reported that on Windows 10, gitter-export-room creates
+its JSON file with UCS-2 encoding.  If that's the case, re-encode
+it as UTF-8.  (If you know how to make these two work together better,
+please let me know.  I am dumb about Windows.)
