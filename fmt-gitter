@@ -166,7 +166,7 @@ def display_time(sent, today=datetime.datetime.today()):
         return (dt.year == today.year and
                 dt.month == today.month and
                 dt.day == today.day)
-    msg_time_utc = datetime.datetime.strptime(sent, '%Y-%m-%dT%H:%M:%S.%f%z')
+    msg_time_utc = datetime.datetime.strptime(sent.upper(), '%Y-%m-%dT%H:%M:%S.%fZ')
     msg_time_local = msg_time_utc.astimezone()
     if is_today(msg_time_local):
         return msg_time_local.strftime('%H:%M')
